@@ -11,7 +11,7 @@ import (
 )
 
 func TestInit(t *testing.T) {
-	cc := new(Chaincode)
+	cc := new(ERC20Chaincode)
 	stub := shim.NewMockStub("chaincode", cc)
 	res := stub.MockInit("1", [][]byte{[]byte("initFunc")})
 	if res.Status != shim.OK {
@@ -20,7 +20,7 @@ func TestInit(t *testing.T) {
 }
 
 func TestInvoke(t *testing.T) {
-	cc := new(Chaincode)
+	cc := new(ERC20Chaincode)
 	stub := shim.NewMockStub("chaincode", cc)
 	res := stub.MockInit("1", [][]byte{[]byte("initFunc")})
 	if res.Status != shim.OK {
