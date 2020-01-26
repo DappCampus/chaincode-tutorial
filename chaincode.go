@@ -104,7 +104,8 @@ func (cc *ERC20Chaincode) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
 // params - tokenName
 // Returns the amount of token in existence
 func (cc *ERC20Chaincode) totalSupply(stub shim.ChaincodeStubInterface, params []string) sc.Response {
-	// a number of params must be one
+
+	// check a number of params is one
 	if len(params) != 1 {
 		return shim.Error("incorrect number of parameter")
 	}
@@ -137,7 +138,7 @@ func (cc *ERC20Chaincode) totalSupply(stub shim.ChaincodeStubInterface, params [
 // Returns the amount of tokens owned by addresss
 func (cc *ERC20Chaincode) balanceOf(stub shim.ChaincodeStubInterface, params []string) sc.Response {
 
-	// a number of params must be one
+	// check a number of params is one
 	if len(params) != 1 {
 		return shim.Error("incorrect number of parameters")
 	}
