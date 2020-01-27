@@ -10,7 +10,7 @@ const MSP_ID = 'Org1MSP'
 const PEER_NAME = 'peer0.org1.example.com'
 const CHANNEL_NAME = 'mychannel'
 
-const CHAINCODE_ID = 'token'
+const CHAINCODE_ID = 'erc20-transfer'
 const CHAINCODE_EVENT = 'transferEvent'
 
 const CRYPTO_CONTENT = {
