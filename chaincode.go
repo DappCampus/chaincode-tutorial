@@ -160,6 +160,26 @@ func (cc *ERC20Chaincode) balanceOf(stub shim.ChaincodeStubInterface, params []s
 }
 
 func (cc *ERC20Chaincode) transfer(stub shim.ChaincodeStubInterface, params []string) sc.Response {
+
+	// query, invoke, error
+	if len(params) != 1 {
+		return shim.Error("incorrect number of parameters")
+	}
+
+	err := stub.SetEvent("transferEvent", []byte("i emit Event!!!"))
+	if err != nil {
+		return shim.Error("failed to SetEvent, error: " + err.Error())
+	}
+
+	// param - check event
+	if params[0] == "query" {
+		stub.GetState("eventemit") // nil
+	} else if params[0] == "invoke" {
+		stub.PutState("eventemit", []byte("emit event"))
+	} else if params[0] == "error" {
+		return shim.Error("event error emit !!")
+	}
+
 	return shim.Success([]byte("transfer call!!!!!"))
 }
 

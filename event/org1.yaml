@@ -1,0 +1,8 @@
+name: "peer event"
+version: "1.0"
+client:
+  organization: Org1
+  credentialStore:
+    path: "./credentialStore"
+    cryptoStore:
+      path: "./cryptoStore"

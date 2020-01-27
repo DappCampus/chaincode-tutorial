@@ -18,3 +18,5 @@
 .vscode
 vendor/
 .editorconfig
+
+node_modules/
