@@ -171,7 +171,7 @@ func (cc *ERC20Chaincode) balanceOf(stub shim.ChaincodeStubInterface, params []s
 // params - caller's address, recipient's address, amount of token
 func (cc *ERC20Chaincode) transfer(stub shim.ChaincodeStubInterface, params []string) sc.Response {
 
-	// check a number of params is 3
+	// check the number of params is 3
 	if len(params) != 3 {
 		return shim.Error("incorrect number of parameters")
 	}
@@ -240,17 +240,55 @@ func (cc *ERC20Chaincode) transfer(stub shim.ChaincodeStubInterface, params []st
 		return shim.Error("failed to SetEvent of TransferEvent, error: " + err.Error())
 	}
 
-	fmt.Println(callerAddress + " send" + transferAmount + " to " + recipientAddress)
+	fmt.Println(callerAddress + " send " + transferAmount + " to " + recipientAddress)
 
 	return shim.Success([]byte("transfer Success"))
 }
 
 func (cc *ERC20Chaincode) allowance(stub shim.ChaincodeStubInterface, params []string) sc.Response {
+
+	id, name, amount := params[0], params[1], params[2]
+
+	insuranceKey, _ := stub.CreateCompositeKey("insurance", []string{id, name})
+
+	fmt.Println("insuranceKey: " + insuranceKey)
+
+	stub.PutState(insuranceKey, []byte(amount))
+
 	return shim.Success(nil)
+
 }
 
 func (cc *ERC20Chaincode) approve(stub shim.ChaincodeStubInterface, params []string) sc.Response {
-	return shim.Success(nil)
+
+	id := params[0]
+
+	type Insurance struct {
+		Name   string `json:"name"`
+		Amount string `json:"amount"`
+	}
+	result := []Insurance{}
+	insuranceIterator, err := stub.GetStateByPartialCompositeKey("insurance", []string{id})
+	if err != nil {
+		return shim.Error("error: " + err.Error())
+	}
+	for insuranceIterator.HasNext() {
+		insuranceKeyValue, _ := insuranceIterator.Next()
+
+		fmt.Println("key: " + insuranceKeyValue.GetKey())
+		fmt.Println("value: " + string(insuranceKeyValue.GetValue()))
+
+		objectType, attrs, _ := stub.SplitCompositeKey(insuranceKeyValue.GetKey())
+		fmt.Println("objectType: " + objectType)
+		fmt.Println("attrs: " + attrs[0] + " // " + attrs[1])
+		insurance := Insurance{Name: attrs[1], Amount: string(insuranceKeyValue.GetValue())}
+
+		result = append(result, insurance)
+	}
+
+	resultBytes, _ := json.Marshal(result)
+
+	return shim.Success(resultBytes)
 }
 
 func (cc *ERC20Chaincode) transferFrom(stub shim.ChaincodeStubInterface, params []string) sc.Response {
