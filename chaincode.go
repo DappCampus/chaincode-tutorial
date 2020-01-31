@@ -99,6 +99,8 @@ func (cc *ERC20Chaincode) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
 		return cc.allowance(stub, params)
 	case "approve":
 		return cc.approve(stub, params)
+	case "approvalList":
+		return cc.approvalList(stub, params)
 	case "transferFrom":
 		return cc.transferFrom(stub, params)
 	case "increaseAllowance":
@@ -252,9 +254,34 @@ func (cc *ERC20Chaincode) transfer(stub shim.ChaincodeStubInterface, params []st
 	return shim.Success([]byte("transfer Success"))
 }
 
+// allowance is query function
+// params - owner's address, spender's address
+// Returns the remaining amount of token to invoke {transferFrom}
 func (cc *ERC20Chaincode) allowance(stub shim.ChaincodeStubInterface, params []string) sc.Response {
 
-	return shim.Success(nil)
+	// check the number of params is 2
+	if len(params) != 2 {
+		return shim.Error("incorrect number of parameters")
+	}
+
+	ownerAddress, spenderAddress := params[0], params[1]
+
+	// create composite key
+	approvalKey, err := stub.CreateCompositeKey("approval", []string{ownerAddress, spenderAddress})
+	if err != nil {
+		return shim.Error("failed to CreateCompositeKey for approval")
+	}
+
+	// get amount
+	amountBytes, err := stub.GetState(approvalKey)
+	if err != nil {
+		return shim.Error("failed to GetState for amount")
+	}
+	if amountBytes == nil {
+		amountBytes = []byte("0")
+	}
+
+	return shim.Success(amountBytes)
 
 }
 
@@ -303,6 +330,62 @@ func (cc *ERC20Chaincode) approve(stub shim.ChaincodeStubInterface, params []str
 	}
 
 	return shim.Success([]byte("approve success"))
+}
+
+// approvalList is query function
+// params - owner's address
+// Returns the approval list approved by owner
+func (cc *ERC20Chaincode) approvalList(stub shim.ChaincodeStubInterface, params []string) sc.Response {
+
+	// check the number of parmas is 1
+	if len(params) != 1 {
+		return shim.Error("incorrect number of params")
+	}
+
+	ownerAddress := params[0]
+
+	// get all approval list (format is iterator)
+	approvalIterator, err := stub.GetStateByPartialCompositeKey("approval", []string{ownerAddress})
+	if err != nil {
+		return shim.Error("failed to GetStateByPartialCompositeKey for approval iterationm error: " + err.Error())
+	}
+
+	// make slice for return value
+	approvalSlice := []Approval{}
+
+	// iterator
+	defer approvalIterator.Close()
+	if approvalIterator.HasNext() {
+		for approvalIterator.HasNext() {
+			approvalKV, _ := approvalIterator.Next()
+
+			// get spender address
+			_, addresses, err := stub.SplitCompositeKey(approvalKV.GetKey())
+			if err != nil {
+				return shim.Error("failed to SplitCompositeKey, error: " + err.Error())
+			}
+			spenderAddress := addresses[1]
+
+			// get amount
+			amountBytes := approvalKV.GetValue()
+			amountInt, err := strconv.Atoi(string(amountBytes))
+			if err != nil {
+				return shim.Error("failed to get amount, error: " + err.Error())
+			}
+
+			// add approval result
+			approval := Approval{Owner: ownerAddress, Spender: spenderAddress, Allowance: amountInt}
+			approvalSlice = append(approvalSlice, approval)
+		}
+	}
+
+	// convert approvalSlice to bytes for return
+	response, err := json.Marshal(approvalSlice)
+	if err != nil {
+		return shim.Error("failed to Marshal approvalSlice, error: " + err.Error())
+	}
+
+	return shim.Success(response)
 }
 
 func (cc *ERC20Chaincode) transferFrom(stub shim.ChaincodeStubInterface, params []string) sc.Response {
