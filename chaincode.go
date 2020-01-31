@@ -32,6 +32,13 @@ type TransferEvent struct {
 	Amount    int    `json:"amount"`
 }
 
+// Approval is the definition of Approval Event & Data format
+type Approval struct {
+	Owner     string `json:"owner"`
+	Spender   string `json:"spender"`
+	Allowance int    `json:"allowance"`
+}
+
 // Init is called when the chaincode is instantiated by the blockchain network.
 // params - tokenName, symbol, owner(address), amount
 func (cc *ERC20Chaincode) Init(stub shim.ChaincodeStubInterface) sc.Response {
@@ -247,48 +254,55 @@ func (cc *ERC20Chaincode) transfer(stub shim.ChaincodeStubInterface, params []st
 
 func (cc *ERC20Chaincode) allowance(stub shim.ChaincodeStubInterface, params []string) sc.Response {
 
-	id, name, amount := params[0], params[1], params[2]
-
-	insuranceKey, _ := stub.CreateCompositeKey("insurance", []string{id, name})
-
-	fmt.Println("insuranceKey: " + insuranceKey)
-
-	stub.PutState(insuranceKey, []byte(amount))
-
 	return shim.Success(nil)
 
 }
 
+// approve is invoke function that Sets amount as the allowance
+// of spender over the owner tokens
+// params - owner's address, spender's address, amount of token
 func (cc *ERC20Chaincode) approve(stub shim.ChaincodeStubInterface, params []string) sc.Response {
 
-	id := params[0]
-
-	type Insurance struct {
-		Name   string `json:"name"`
-		Amount string `json:"amount"`
+	// check the number of params is 3
+	if len(params) != 3 {
+		return shim.Error("incorrect number of parameters")
 	}
-	result := []Insurance{}
-	insuranceIterator, err := stub.GetStateByPartialCompositeKey("insurance", []string{id})
+
+	ownerAddress, spenderAddress, allowanceAmount := params[0], params[1], params[2]
+
+	// check amount is integer & positive
+	allowanceAmountInt, err := strconv.Atoi(allowanceAmount)
 	if err != nil {
-		return shim.Error("error: " + err.Error())
+		return shim.Error("allowance amount must be integer")
 	}
-	for insuranceIterator.HasNext() {
-		insuranceKeyValue, _ := insuranceIterator.Next()
-
-		fmt.Println("key: " + insuranceKeyValue.GetKey())
-		fmt.Println("value: " + string(insuranceKeyValue.GetValue()))
-
-		objectType, attrs, _ := stub.SplitCompositeKey(insuranceKeyValue.GetKey())
-		fmt.Println("objectType: " + objectType)
-		fmt.Println("attrs: " + attrs[0] + " // " + attrs[1])
-		insurance := Insurance{Name: attrs[1], Amount: string(insuranceKeyValue.GetValue())}
-
-		result = append(result, insurance)
+	if allowanceAmountInt <= 0 {
+		return shim.Error("allowance amount must be positve")
 	}
 
-	resultBytes, _ := json.Marshal(result)
+	// create composite key for allowance - approval/{owner}/{spender}
+	approvalKey, err := stub.CreateCompositeKey("approval", []string{ownerAddress, spenderAddress})
+	if err != nil {
+		return shim.Error("failed to CreateCompositeKey for approval")
+	}
 
-	return shim.Success(resultBytes)
+	// save allowance amount
+	err = stub.PutState(approvalKey, []byte(allowanceAmount))
+	if err != nil {
+		return shim.Error("failed to PutState for approval")
+	}
+
+	// emit approval event
+	approvalEvent := Approval{Owner: ownerAddress, Spender: spenderAddress, Allowance: allowanceAmountInt}
+	approvalBytes, err := json.Marshal(approvalEvent)
+	if err != nil {
+		return shim.Error("failed to SetEvent for ApprovalEvent")
+	}
+	err = stub.SetEvent("approvalEvent", approvalBytes)
+	if err != nil {
+		return shim.Error("failed to SetEvent for ApprovalEvent")
+	}
+
+	return shim.Success([]byte("approve success"))
 }
 
 func (cc *ERC20Chaincode) transferFrom(stub shim.ChaincodeStubInterface, params []string) sc.Response {
