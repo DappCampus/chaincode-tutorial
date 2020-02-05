@@ -442,14 +442,6 @@ func (cc *ERC20Chaincode) transferFrom(stub shim.ChaincodeStubInterface, params 
 	return shim.Success([]byte("transferFrom success"))
 }
 
-func (cc *ERC20Chaincode) increaseAllowance(stub shim.ChaincodeStubInterface, params []string) sc.Response {
-	return shim.Success(nil)
-}
-
-func (cc *ERC20Chaincode) decreaseAllowance(stub shim.ChaincodeStubInterface, params []string) sc.Response {
-	return shim.Success(nil)
-}
-
 // transferOtherToken is invoke function that Moves amount other chaincode tokens
 // from the caller's address to recipient
 // params - chaincode name, caller's address, recipient's address, amount
@@ -475,6 +467,99 @@ func (cc *ERC20Chaincode) transferOtherToken(stub shim.ChaincodeStubInterface, p
 	}
 
 	return shim.Success([]byte("transfer other token success"))
+}
+
+// increaseAllowance is invoke function that increases spender's allowance by owner
+// params - owner's address, spender's address, amount of amount
+func (cc *ERC20Chaincode) increaseAllowance(stub shim.ChaincodeStubInterface, params []string) sc.Response {
+
+	// check the number of parmas is 3
+	if len(params) != 3 {
+		return shim.Error("incorrect number of params")
+	}
+
+	ownerAddress, spenderAddress, increaseAmount := params[0], params[1], params[2]
+
+	// check amount is integer & positive
+	increaseAmountInt, err := strconv.Atoi(increaseAmount)
+	if err != nil {
+		return shim.Error("amount must be integer")
+	}
+	if increaseAmountInt <= 0 {
+		return shim.Error("amount must be positve")
+	}
+
+	// get allowance
+	allowanceResponse := cc.allowance(stub, []string{ownerAddress, spenderAddress})
+	if allowanceResponse.GetStatus() >= 400 {
+		return shim.Error("failed to get allowance, error: " + allowanceResponse.GetMessage())
+	}
+
+	// convert allowance response paylaod to allowance data
+	allowanceInt, err := strconv.Atoi(string(allowanceResponse.GetPayload()))
+	if err != nil {
+		return shim.Error("allowance must be positive")
+	}
+
+	// increase allowance
+	resultAmountInt := allowanceInt + increaseAmountInt
+	resultAmount := strconv.Itoa(resultAmountInt)
+
+	// call approve
+	approveResponse := cc.approve(stub, []string{ownerAddress, spenderAddress, resultAmount})
+	if approveResponse.GetStatus() >= 400 {
+		return shim.Error("failed to approve allowance, error: " + approveResponse.GetMessage())
+	}
+
+	return shim.Success([]byte("increaseAllowance success"))
+}
+
+// decreaseAllowance is invoke function that decreases spender's allowance by owner
+// params - owner's address, spender's address, amount of token
+func (cc *ERC20Chaincode) decreaseAllowance(stub shim.ChaincodeStubInterface, params []string) sc.Response {
+
+	// check the number of params is 3
+	if len(params) != 3 {
+		return shim.Error("incorrect number of params")
+	}
+
+	ownerAddress, spenderAddress, decreaseAmount := params[0], params[1], params[2]
+
+	// check amount is integer & positive
+	decreaseAmountInt, err := strconv.Atoi(decreaseAmount)
+	if err != nil {
+		return shim.Error("decrease amount must be integer")
+	}
+	if decreaseAmountInt <= 0 {
+		return shim.Error("decrease amount must be positive")
+	}
+
+	// get allowance
+	allowanceResponse := cc.allowance(stub, []string{ownerAddress, spenderAddress})
+	if allowanceResponse.Status >= 400 {
+		return shim.Error("failed to get allowance, error: " + allowanceResponse.GetMessage())
+	}
+
+	// convert allowance response payload to allowance data
+	allowanceInt, err := strconv.Atoi(string(allowanceResponse.GetPayload()))
+	if err != nil {
+		return shim.Error("allowance must be positive")
+	}
+
+	// calculate allowance (allowance cannot be negative!!)
+	resultAmountInt := allowanceInt - decreaseAmountInt
+	if resultAmountInt < 0 {
+		resultAmountInt = 0
+	}
+	resultAmount := strconv.Itoa(resultAmountInt)
+
+	// call approve
+	approveResponse := cc.approve(stub, []string{ownerAddress, spenderAddress, resultAmount})
+	if approveResponse.GetStatus() >= 400 {
+		return shim.Error("failed to approve allowance, error: " + approveResponse.GetMessage())
+	}
+
+	return shim.Success([]byte("decreaseAllowance success"))
 }
 
 func (cc *ERC20Chaincode) mint(stub shim.ChaincodeStubInterface, params []string) sc.Response {
