@@ -302,7 +302,7 @@ func (cc *ERC20Chaincode) approve(stub shim.ChaincodeStubInterface, params []str
 	if err != nil {
 		return shim.Error("allowance amount must be integer")
 	}
-	if allowanceAmountInt <= 0 {
+	if allowanceAmountInt < 0 {
 		return shim.Error("allowance amount must be positve")
 	}
 
@@ -388,8 +388,56 @@ func (cc *ERC20Chaincode) approvalList(stub shim.ChaincodeStubInterface, params 
 	return shim.Success(response)
 }
 
+// transferFrom is invoke function that Moves amount of tokens from sender(owner) to recipient
+// using allowance of spender
+// parmas - owner's address, spender's address, recipient's address, amount of token
 func (cc *ERC20Chaincode) transferFrom(stub shim.ChaincodeStubInterface, params []string) sc.Response {
-	return shim.Success(nil)
+
+	// check the number of parmas is 4
+	if len(params) != 4 {
+		return shim.Error("incorrect number of params")
+	}
+
+	ownerAddress, spenderAddress, recipientAddress, transferAmount := params[0], params[1], params[2], params[3]
+
+	// check amount is integer & positive
+	transferAmountInt, err := strconv.Atoi(transferAmount)
+	if err != nil {
+		return shim.Error("amount must be integer")
+	}
+	if transferAmountInt <= 0 {
+		return shim.Error("amount must be positve")
+	}
+
+	// get allowance
+	allowanceResponse := cc.allowance(stub, []string{ownerAddress, spenderAddress})
+	if allowanceResponse.GetStatus() >= 400 {
+		return shim.Error("failed to get allowance, error: " + allowanceResponse.GetMessage())
+	}
+
+	// convert allowance response paylaod to allowance data
+	allowanceInt, err := strconv.Atoi(string(allowanceResponse.GetPayload()))
+	if err != nil {
+		return shim.Error("allowance must be positive")
+	}
+
+	// transfer from owner to recipient
+	transferResponse := cc.transfer(stub, []string{ownerAddress, recipientAddress, transferAmount})
+	if transferResponse.GetStatus() >= 400 {
+		return shim.Error("failed to transfer, error: " + transferResponse.GetMessage())
+	}
+
+	// decrease allowance amount
+	approveAmountInt := allowanceInt - transferAmountInt
+	approveAmount := strconv.Itoa(approveAmountInt)
+
+	// approve amount of tokens transfered
+	approveResponse := cc.approve(stub, []string{ownerAddress, spenderAddress, approveAmount})
+	if approveResponse.GetStatus() >= 400 {
+		return shim.Error("failed to approve, error: " + approveResponse.GetMessage())
+	}
+
+	return shim.Success([]byte("transferFrom success"))
 }
 
 func (cc *ERC20Chaincode) increaseAllowance(stub shim.ChaincodeStubInterface, params []string) sc.Response {
