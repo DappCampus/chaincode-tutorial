@@ -103,6 +103,8 @@ func (cc *ERC20Chaincode) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
 		return cc.approvalList(stub, params)
 	case "transferFrom":
 		return cc.transferFrom(stub, params)
+	case "transferOtherToken":
+		return cc.transferOtherToken(stub, params)
 	case "increaseAllowance":
 		return cc.increaseAllowance(stub, params)
 	case "decreaseAllowance":
@@ -446,6 +448,33 @@ func (cc *ERC20Chaincode) increaseAllowance(stub shim.ChaincodeStubInterface, pa
 
 func (cc *ERC20Chaincode) decreaseAllowance(stub shim.ChaincodeStubInterface, params []string) sc.Response {
 	return shim.Success(nil)
+}
+
+// transferOtherToken is invoke function that Moves amount other chaincode tokens
+// from the caller's address to recipient
+// params - chaincode name, caller's address, recipient's address, amount
+func (cc *ERC20Chaincode) transferOtherToken(stub shim.ChaincodeStubInterface, params []string) sc.Response {
+
+	// check the number of parmas is 4
+	if len(params) != 4 {
+		return shim.Error("incorrect number of params")
+	}
+
+	chaincodeName, callerAddress, recipientAddress, transferAmount := params[0], params[1], params[2], params[3]
+
+	// make arguments
+	args := [][]byte{[]byte("transfer"), []byte(callerAddress), []byte(recipientAddress), []byte(transferAmount)}
+
+	// get channel
+	channel := stub.GetChannelID()
+
+	// transfer other chaincode token
+	transferResponse := stub.InvokeChaincode(chaincodeName, args, channel)
+	if transferResponse.GetStatus() >= 400 {
+		return shim.Error(fmt.Sprintf("failed to transfer %s, error: %s", chaincodeName, transferResponse.GetMessage()))
+	}
+
+	return shim.Success([]byte("transfer other token success"))
 }
 
 func (cc *ERC20Chaincode) mint(stub shim.ChaincodeStubInterface, params []string) sc.Response {
