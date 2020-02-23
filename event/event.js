@@ -14,9 +14,9 @@ const CHAINCODE_ID = 'erc20-transfer'
 const CHAINCODE_EVENT = 'transferEvent'
 
 const CRYPTO_CONTENT = {
-  privateKey: '/Users/kyung/.fabric-vscode/environments/local_fabric/admin-msp/keystore/5f7dd1ce6b670c99e38f2eb88beaec6626e75f3f8e99d16d4f31a10393a3f402_sk',
-  signedCert: '/Users/kyung/.fabric-vscode/environments/local_fabric/admin-msp/signcerts/cert.pem'
-}
+    privateKey: '/Users/kyung/.fabric-vscode/environments/Local Fabric/wallets/Org1/admin/keystore/2ebbd4c70874a0a7b017894df7b9ca7bd29d5b0dc0846484f455fb2b8a4fbedb_sk',
+    signedCert: '/Users/kyung/.fabric-vscode/environments/Local Fabric/wallets/Org1/admin/signcerts/cert.pem'
+  }
 
 async function subscribeEvent() {
   try {
