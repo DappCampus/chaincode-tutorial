@@ -25,6 +25,20 @@ func SaveERC20Metadata(stub shim.ChaincodeStubInterface, tokenName, symbol, owne
 	return nil
 }
 
+func GetERC20Metadata(stub shim.ChaincodeStubInterface, tokenName string) (*model.ERC20Metadata, error) {
+	// Get ERC20 Metadata
+	erc20 := model.ERC20Metadata{}
+	erc20Bytes, err := stub.GetState(tokenName)
+	if err != nil {
+		return nil, model.NewCustomError(model.GetStateErrorType, "balance", err.Error())
+	}
+	err = json.Unmarshal(erc20Bytes, &erc20)
+	if err != nil {
+		return nil, model.NewCustomError(model.UnMarshalErrorType, "erc20Metadata", err.Error())
+	}
+	return &erc20, nil
+}
+
 func GetERC20TotalSupply(stub shim.ChaincodeStubInterface, tokenName string) (*uint64, error) {
 	// Get ERC20 Metadata
 	erc20 := model.ERC20Metadata{}
