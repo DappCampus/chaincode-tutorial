@@ -61,7 +61,50 @@ func (cc *ERC20Chaincode) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
 		return cc.controller.Mint(stub, params)
 	case "burn":
 		return cc.controller.Burn(stub, params)
+	case "transactionAPI":
+		return cc.transactionAPI(stub, params)
 	default:
 		return sc.Response{Status: 404, Message: "404 Not Found", Payload: nil}
 	}
+}
+
+// <Transaction API>
+//   - GetTxID
+//   - GetTxTimestamp()
+//   - GetCreator()
+//   - GetSignedProposal()
+// <State data API>
+//   - GetStateByRange()
+//   - GetStateByRangeWithPagination()()
+//   - GetStateByPartialCompositeKeyWithPagination()
+// <Key API>
+//   - GetHistoryForKey()
+
+func (cc *ERC20Chaincode) transactionAPI(stub shim.ChaincodeStubInterface, params []string) sc.Response {
+
+	// GetTxID
+	fmt.Println("==================== TX ID ====================")
+	txID := stub.GetTxID()
+	fmt.Println(txID)
+	fmt.Println()
+
+	// GetTxTimestamp
+	fmt.Println("==================== TX Timestamp ====================")
+	txTimeStamp, _ := stub.GetTxTimestamp()
+	fmt.Println(txTimeStamp.String())
+	fmt.Println()
+
+	// GetCreator
+	fmt.Println("==================== Creator ====================")
+	creator, _ := stub.GetCreator()
+	fmt.Println(string(creator))
+	fmt.Println()
+
+	// GetSignedProposal
+	fmt.Println("==================== Signed Proposal ====================")
+	signedProposal, _ := stub.GetSignedProposal()
+	fmt.Println(signedProposal.String())
+	fmt.Println()
+
+	return shim.Success(nil)
 }
