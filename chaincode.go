@@ -70,6 +70,8 @@ func (cc *ERC20Chaincode) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
 		return cc.stateDataAPI(stub, params)
 	case "stateDataAPI2":
 		return cc.stateDataAPI2(stub, params)
+	case "historyAPI":
+		return cc.historyAPI(stub, params)
 	default:
 		return sc.Response{Status: 404, Message: "404 Not Found", Payload: nil}
 	}
@@ -155,6 +157,19 @@ func (cc *ERC20Chaincode) stateDataAPI2(stub shim.ChaincodeStubInterface, params
 	fmt.Println("========== Book Mark==========")
 	fmt.Println(res.GetBookmark())
 	fmt.Println()
+
+	return shim.Success(nil)
+}
+
+func (cc *ERC20Chaincode) historyAPI(stub shim.ChaincodeStubInterface, params []string) sc.Response {
+	key := params[0]
+	iterator, _ := stub.GetHistoryForKey(key)
+	for iterator.HasNext() {
+		km, _ := iterator.Next()
+		fmt.Println("===== " + km.GetTimestamp().String() + " =====")
+		fmt.Println(string(km.GetValue()))
+		fmt.Println()
+	}
 
 	return shim.Success(nil)
 }
