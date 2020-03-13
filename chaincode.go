@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/erc20/controller"
 	"github.com/hyperledger/fabric/core/chaincode/shim"
@@ -63,6 +64,12 @@ func (cc *ERC20Chaincode) Invoke(stub shim.ChaincodeStubInterface) sc.Response {
 		return cc.controller.Burn(stub, params)
 	case "transactionAPI":
 		return cc.transactionAPI(stub, params)
+	case "putDummyData":
+		return cc.putDummyData(stub, params)
+	case "stateDataAPI":
+		return cc.stateDataAPI(stub, params)
+	case "stateDataAPI2":
+		return cc.stateDataAPI2(stub, params)
 	default:
 		return sc.Response{Status: 404, Message: "404 Not Found", Payload: nil}
 	}
@@ -104,6 +111,49 @@ func (cc *ERC20Chaincode) transactionAPI(stub shim.ChaincodeStubInterface, param
 	fmt.Println("==================== Signed Proposal ====================")
 	signedProposal, _ := stub.GetSignedProposal()
 	fmt.Println(signedProposal.String())
+	fmt.Println()
+
+	return shim.Success(nil)
+}
+
+const title = "stateTest"
+
+func (cc *ERC20Chaincode) putDummyData(stub shim.ChaincodeStubInterface, params []string) sc.Response {
+	for i := 1; i <= 30; i++ {
+		stub.PutState(title+strconv.Itoa(i), []byte("this is test - "+strconv.Itoa(i)))
+	}
+
+	return shim.Success(nil)
+}
+
+func (cc *ERC20Chaincode) stateDataAPI(stub shim.ChaincodeStubInterface, params []string) sc.Response {
+
+	startKey, endKey := params[0], params[1]
+
+	iterator, _ := stub.GetStateByRange(startKey, endKey)
+	for iterator.HasNext() {
+		kv, _ := iterator.Next()
+		fmt.Println("===== " + kv.GetKey() + " ======")
+		fmt.Println(string(kv.GetValue()))
+		fmt.Println()
+	}
+
+	return shim.Success(nil)
+}
+
+func (cc *ERC20Chaincode) stateDataAPI2(stub shim.ChaincodeStubInterface, params []string) sc.Response {
+
+	startKey, endKey, bookMark := params[0], params[1], params[2]
+
+	iterator, res, _ := stub.GetStateByRangeWithPagination(startKey, endKey, 5, bookMark)
+	for iterator.HasNext() {
+		kv, _ := iterator.Next()
+		fmt.Println("===== " + kv.GetKey() + " ======")
+		fmt.Println(string(kv.GetValue()))
+		fmt.Println()
+	}
+	fmt.Println("========== Book Mark==========")
+	fmt.Println(res.GetBookmark())
 	fmt.Println()
 
 	return shim.Success(nil)
