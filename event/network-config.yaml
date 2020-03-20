@@ -13,7 +13,7 @@
           chaincodeQuery: true
           ledgerQuery: true
           eventSource: true
-          
+
   organizations:
     Org1:
       mspid: Org1MSP
@@ -24,10 +24,10 @@
 
   orderers:
     orderer.example.com:
-      url: grpcs://localhost:17050
+      url: grpcs://localhost:17056
       grpcOptions:
         ssl-target-name-override: orderer.example.com
-  
+
   peers:
     peer0.org1.example.com:
       # this URL is used to send endorsement and query requests
@@ -35,8 +35,8 @@
       eventUrl: grpc://localhost:17052
       grpcOptions:
         ssl-target-name-override: peer0.org1.example.com
-  
+
   certificateAuthorities:
     ca.org1.example.com:
-      url: http://localhost:17054
+      url: http://localhost:17050
       caName: ca.org1.example.com
